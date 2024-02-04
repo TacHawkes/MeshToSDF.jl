@@ -3,6 +3,12 @@ uuid = "fd1d5b19-be43-41f5-9805-017ce8649ff3"
 authors = ["Oliver Kliebisch <oliver@kliebisch.net> and contributors"]
 version = "1.0.0-DEV"
 
+[deps]
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+GeometryBasics = "5c1252a2-5f33-56bf-86c9-59e7332b4326"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MeshIO = "7269a6da-0436-5bbc-96c2-40638cbb6118"
+
 [compat]
 julia = "1"
 
