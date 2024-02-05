@@ -95,7 +95,8 @@ function orientation(x1, y1, x2, y2)
     return sign, twice_signed_area
 end
 
-function point_in_triangle_2d(x0::Int, y0::Int, x1::T, y1::T, x2::T, y2::T, x3::T, y3::T) where T <: Real
+point_in_triangle_2d(x0, y0, x1, y1, x2, y2, x3, y3) = point_in_triangle_2d(promote(x0, y0, x1, y1, x2, y2, x3, y3)...)
+function point_in_triangle_2d(x0::T, y0::T, x1::T, y1::T, x2::T, y2::T, x3::T, y3::T) where T <: Real
     x1 -= x0; x2 -= x0; x3 -= x0;
     y1 -= y0; y2 -= y0; y3 -= y0;
     signa, a = orientation(x2, y2, x3, y3)
@@ -122,19 +123,19 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
     # Initialize distances near the mesh and figure out intersection counts
     for t in eachindex(tri)
         p, q, r = tri[t]
-        fip, fjp, fkp = ((x[p] - origin) / dx)
-        fiq, fjq, fkq = ((x[q] - origin) / dx)
-        fir, fjr, fkr = ((x[r] - origin) / dx)
+        fip, fjp, fkp = ((convert(Point3{Float64}, x[p]) - origin) / dx)
+        fiq, fjq, fkq = ((convert(Point3{Float64}, x[q]) - origin) / dx)
+        fir, fjr, fkr = ((convert(Point3{Float64}, x[r]) - origin) / dx)
 
-        i0 = clamp(floor(Int, min(fip, fiq, fir)) - exact_band, 0, ni - 1) + 1
-        i1 = clamp(floor(Int, max(fip, fiq, fir)) + exact_band + 1, 0, ni - 1) + 1
-        j0 = clamp(floor(Int, min(fjp, fjq, fjr)) - exact_band, 0, nj - 1) + 1
-        j1 = clamp(floor(Int, max(fjp, fjq, fjr)) + exact_band + 1, 0, nj - 1) + 1
-        k0 = clamp(floor(Int, min(fkp, fkq, fkr)) - exact_band, 0, nk - 1) + 1
-        k1 = clamp(floor(Int, max(fkp, fkq, fkr)) + exact_band + 1, 0, nk - 1) + 1
+        i0 = clamp(trunc(Int, min(fip, fiq, fir)) - exact_band, 0, ni - 1) + 1
+        i1 = clamp(trunc(Int, max(fip, fiq, fir)) + exact_band + 1, 0, ni - 1) + 1
+        j0 = clamp(trunc(Int, min(fjp, fjq, fjr)) - exact_band, 0, nj - 1) + 1
+        j1 = clamp(trunc(Int, max(fjp, fjq, fjr)) + exact_band + 1, 0, nj - 1) + 1
+        k0 = clamp(trunc(Int, min(fkp, fkq, fkr)) - exact_band, 0, nk - 1) + 1
+        k1 = clamp(trunc(Int, max(fkp, fkq, fkr)) + exact_band + 1, 0, nk - 1) + 1
 
         for k in k0:k1, j in j0:j1, i in i0:i1
-            gx = Point3(i * dx + origin[1], j * dx + origin[2], k * dx + origin[3])
+            gx = Point3((i-1) * dx + origin[1], (j-1) * dx + origin[2], (k-1) * dx + origin[3])
             d = point_triangle_distance(gx, x[p], x[q], x[r])
             if d < phi[i, j, k]
                 phi[i, j, k] = d
@@ -152,9 +153,9 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
             if pit
                 fi = a * fip + b * fiq + c * fir  # intersection i coordinate
                 i_interval = ceil(Int, fi)  # intersection is in (i_interval-1, i_interval]
-                if i_interval < 0
+                if i_interval < 1
                     intersection_count[1, j, k] += 1  # enlarge the first interval
-                elseif i_interval < ni
+                elseif i_interval <= ni
                     intersection_count[i_interval, j, k] += 1
                 end
                 # Ignoring intersections beyond the +x side of the grid
