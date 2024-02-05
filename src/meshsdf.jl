@@ -123,16 +123,16 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
     # Initialize distances near the mesh and figure out intersection counts
     for t in eachindex(tri)
         p, q, r = tri[t]
-        fip, fjp, fkp = ((convert(Point3{Float64}, x[p]) - origin) / dx)
-        fiq, fjq, fkq = ((convert(Point3{Float64}, x[q]) - origin) / dx)
-        fir, fjr, fkr = ((convert(Point3{Float64}, x[r]) - origin) / dx)
+        fip, fjp, fkp = ((convert(Point3{Float64}, x[p]) - origin) / dx) .+ 1
+        fiq, fjq, fkq = ((convert(Point3{Float64}, x[q]) - origin) / dx) .+ 1
+        fir, fjr, fkr = ((convert(Point3{Float64}, x[r]) - origin) / dx) .+ 1
 
-        i0 = clamp(trunc(Int, min(fip, fiq, fir)) - exact_band, 0, ni - 1) + 1
-        i1 = clamp(trunc(Int, max(fip, fiq, fir)) + exact_band + 1, 0, ni - 1) + 1
-        j0 = clamp(trunc(Int, min(fjp, fjq, fjr)) - exact_band, 0, nj - 1) + 1
-        j1 = clamp(trunc(Int, max(fjp, fjq, fjr)) + exact_band + 1, 0, nj - 1) + 1
-        k0 = clamp(trunc(Int, min(fkp, fkq, fkr)) - exact_band, 0, nk - 1) + 1
-        k1 = clamp(trunc(Int, max(fkp, fkq, fkr)) + exact_band + 1, 0, nk - 1) + 1
+        i0 = clamp(trunc(Int, min(fip, fiq, fir)) - exact_band, 1, ni)
+        i1 = clamp(trunc(Int, max(fip, fiq, fir)) + exact_band + 1, 1, ni)
+        j0 = clamp(trunc(Int, min(fjp, fjq, fjr)) - exact_band, 1, nj)
+        j1 = clamp(trunc(Int, max(fjp, fjq, fjr)) + exact_band + 1, 1, nj)
+        k0 = clamp(trunc(Int, min(fkp, fkq, fkr)) - exact_band, 1, nk)
+        k1 = clamp(trunc(Int, max(fkp, fkq, fkr)) + exact_band + 1, 1, nk)
 
         for k in k0:k1, j in j0:j1, i in i0:i1
             gx = Point3((i-1) * dx + origin[1], (j-1) * dx + origin[2], (k-1) * dx + origin[3])
@@ -144,10 +144,10 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
         end
 
         # And do intersection counts
-        j0 = clamp(ceil(Int, min(fjp, fjq, fjr)), 0, nj - 1) + 1
-        j1 = clamp(floor(Int, max(fjp, fjq, fjr)), 0, nj - 1) + 1
-        k0 = clamp(ceil(Int, min(fkp, fkq, fkr)), 0, nk - 1) + 1
-        k1 = clamp(floor(Int, max(fkp, fkq, fkr)), 0, nk - 1) + 1
+        j0 = clamp(ceil(Int, min(fjp, fjq, fjr)), 1, nj)
+        j1 = clamp(floor(Int, max(fjp, fjq, fjr)), 1, nj)
+        k0 = clamp(ceil(Int, min(fkp, fkq, fkr)), 1, nk)
+        k1 = clamp(floor(Int, max(fkp, fkq, fkr)), 1, nk)
         for k in k0:k1, j in j0:j1
             pit, a, b, c = point_in_triangle_2d(j, k, fjp, fkp, fjq, fkq, fjr, fkr)
             if pit
