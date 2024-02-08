@@ -1,4 +1,4 @@
-mag2(x) = sum(abs2, x)
+mag2(x) = sum(x->x^2, x)
 function point_segment_distance(x0, x1, x2)
     dx = x2 - x1
     m2 = mag2(dx)
@@ -40,12 +40,12 @@ function point_triangle_distance(x0::P, x1::P, x2::P, x3::P) where {T <: Real, P
 end
 
 function check_neighbour(tri, x, phi, closest_tri, gx, i0, j0, k0, i1, j1, k1)
-    if closest_tri[i1, j1, k1] >= 1
-        p, q, r = tri[closest_tri[i1, j1, k1]]
+    if closest_tri[i1 + 1, j1 + 1, k1 + 1] >= 1
+        p, q, r = tri[closest_tri[i1 + 1, j1 + 1, k1 + 1]]
         d = point_triangle_distance(gx, x[p], x[q], x[r])
-        if d < phi[i0, j0, k0]
-            phi[i0, j0, k0] = d
-            closest_tri[i0, j0, k0] = closest_tri[i1, j1, k1]
+        if d < phi[i0 + 1, j0 + 1, k0+ 1]
+            phi[i0 + 1, j0 + 1, k0 + 1] = d
+            closest_tri[i0 + 1, j0 + 1, k0 + 1] = closest_tri[i1 + 1, j1 + 1, k1 + 1]
         end
     end
 
@@ -54,13 +54,13 @@ end
 
 function sweep(tri, x, phi, closest_tri, origin, dx, di, dj, dk)
     # Determine the sweep order based on di, dj, dk
-    i0, i1 = di > 0 ? (2, size(phi, 1)) : (size(phi, 1) - 1, 1)
-    j0, j1 = dj > 0 ? (2, size(phi, 2)) : (size(phi, 2) - 1, 1)
-    k0, k1 = dk > 0 ? (2, size(phi, 3)) : (size(phi, 3) - 1, 1)
+    i0, i1 = di > 0 ? (1, size(phi, 1)) : (-1, size(phi, 1) - 2)
+    j0, j1 = dj > 0 ? (1, size(phi, 2)) : (-1, size(phi, 2) - 2)
+    k0, k1 = dk > 0 ? (1, size(phi, 3)) : (-1, size(phi, 3) - 2)
 
     # Perform the sweep
-    for k in (dk > 0 ? (k0:k1) : (k0:-1:k1)), j in (dj > 0 ? (j0:j1) : (j0:-1:j1)), i in (di > 0 ? (i0:i1) : (i0:-1:i1))
-        gx = Point3((i-1) * dx + origin[1], (j-1) * dx + origin[2], (k-1) * dx + origin[3])
+    for k in k0:dk:(k1 - dk), j in j0:dj:(j1 - dj), i in i0:di:(i1 - di)
+        gx = Point3(i * dx + origin[1], j * dx + origin[2], k * dx + origin[3])
         check_neighbour(tri, x, phi, closest_tri, gx, i, j, k, i - di, j, k)
         check_neighbour(tri, x, phi, closest_tri, gx, i, j, k, i, j - dj, k)
         check_neighbour(tri, x, phi, closest_tri, gx, i, j, k, i - di, j - dj, k)
@@ -118,45 +118,45 @@ end
 
 function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
     phi = fill((ni + nj + nk)*dx, (ni, nj, nk))
-    closest_tri = zeros(Int, ni, nj, nk)
+    closest_tri = fill(-1, ni, nj, nk)
     intersection_count = zeros(Int, ni, nj, nk)
     # Initialize distances near the mesh and figure out intersection counts
     for t in eachindex(tri)
         p, q, r = tri[t]
-        fip, fjp, fkp = ((convert(Point3{Float64}, x[p]) - origin) / dx) .+ 1
-        fiq, fjq, fkq = ((convert(Point3{Float64}, x[q]) - origin) / dx) .+ 1
-        fir, fjr, fkr = ((convert(Point3{Float64}, x[r]) - origin) / dx) .+ 1
+        fip, fjp, fkp = ((convert(Point3{Float64}, x[p]) - origin) / dx)
+        fiq, fjq, fkq = ((convert(Point3{Float64}, x[q]) - origin) / dx)
+        fir, fjr, fkr = ((convert(Point3{Float64}, x[r]) - origin) / dx)
 
-        i0 = clamp(trunc(Int, min(fip, fiq, fir)) - exact_band, 1, ni)
-        i1 = clamp(trunc(Int, max(fip, fiq, fir)) + exact_band + 1, 1, ni)
-        j0 = clamp(trunc(Int, min(fjp, fjq, fjr)) - exact_band, 1, nj)
-        j1 = clamp(trunc(Int, max(fjp, fjq, fjr)) + exact_band + 1, 1, nj)
-        k0 = clamp(trunc(Int, min(fkp, fkq, fkr)) - exact_band, 1, nk)
-        k1 = clamp(trunc(Int, max(fkp, fkq, fkr)) + exact_band + 1, 1, nk)
+        i0 = clamp(trunc(Int, min(fip, fiq, fir)) - exact_band, 0, ni - 1)
+        i1 = clamp(trunc(Int, max(fip, fiq, fir)) + exact_band + 1, 0, ni - 1)
+        j0 = clamp(trunc(Int, min(fjp, fjq, fjr)) - exact_band, 0, nj - 1)
+        j1 = clamp(trunc(Int, max(fjp, fjq, fjr)) + exact_band + 1, 0, nj - 1)
+        k0 = clamp(trunc(Int, min(fkp, fkq, fkr)) - exact_band, 0, nk - 1)
+        k1 = clamp(trunc(Int, max(fkp, fkq, fkr)) + exact_band + 1, 0, nk - 1)
 
         for k in k0:k1, j in j0:j1, i in i0:i1
-            gx = Point3((i-1) * dx + origin[1], (j-1) * dx + origin[2], (k-1) * dx + origin[3])
+            gx = Point3(i * dx + origin[1], j * dx + origin[2], k * dx + origin[3])
             d = point_triangle_distance(gx, x[p], x[q], x[r])
-            if d < phi[i, j, k]
-                phi[i, j, k] = d
-                closest_tri[i, j, k] = t
+            if d < phi[i + 1, j + 1, k + 1]
+                phi[i + 1, j + 1, k + 1] = d
+                closest_tri[i + 1, j + 1, k + 1] = t
             end
         end
 
         # And do intersection counts
-        j0 = clamp(ceil(Int, min(fjp, fjq, fjr)), 1, nj)
-        j1 = clamp(floor(Int, max(fjp, fjq, fjr)), 1, nj)
-        k0 = clamp(ceil(Int, min(fkp, fkq, fkr)), 1, nk)
-        k1 = clamp(floor(Int, max(fkp, fkq, fkr)), 1, nk)
+        j0 = clamp(ceil(Int, min(fjp, fjq, fjr)), 0, nj - 1)
+        j1 = clamp(floor(Int, max(fjp, fjq, fjr)), 0, nj - 1)
+        k0 = clamp(ceil(Int, min(fkp, fkq, fkr)), 0, nk - 1)
+        k1 = clamp(floor(Int, max(fkp, fkq, fkr)), 0, nk - 1)
         for k in k0:k1, j in j0:j1
             pit, a, b, c = point_in_triangle_2d(j, k, fjp, fkp, fjq, fkq, fjr, fkr)
             if pit
                 fi = a * fip + b * fiq + c * fir  # intersection i coordinate
-                i_interval = ceil(Int, fi)  # intersection is in (i_interval-1, i_interval]
-                if i_interval < 1
-                    intersection_count[1, j, k] += 1  # enlarge the first interval
+                i_interval = ceil(Int, fi) # intersection is in (i_interval-1, i_interval]
+                if i_interval < 0
+                    intersection_count[1, j + 1, k + 1] += 1  # enlarge the first interval
                 elseif i_interval <= ni
-                    intersection_count[i_interval, j, k] += 1
+                    intersection_count[i_interval + 1, j + 1, k + 1] += 1
                 end
                 # Ignoring intersections beyond the +x side of the grid
             end
