@@ -1,4 +1,4 @@
-mag2(x) = sum(abs2, x)
+mag2(x) = sum(x->x^2, x)
 function point_segment_distance(x0, x1, x2)
     dx = x2 - x1
     m2 = mag2(dx)
@@ -186,4 +186,19 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
     end
 
     return phi
+end
+
+function signed_distance_field(V, F, size)
+    _bbmin = Point3{Float32}(-1.0, -1.0, -1.0)
+    dx = 2.0 / size
+    return make_level_set3(F, V, _bbmin, Float32(dx), size, size, size)
+end
+
+
+function normalize_mesh(V, mesh_scale=0.8)
+    bbmin = Point3(minimum(p[1] for p in V), minimum(p[2] for p in V), minimum(p[3] for p in V))
+    bbmax = Point3(maximum(p[1] for p in V), maximum(p[2] for p in V), maximum(p[3] for p in V))
+    center = (bbmin + bbmax) * 0.5
+    scale = 2.0 * mesh_scale / maximum(bbmax - bbmin)
+    return (V .- center) * scale
 end
