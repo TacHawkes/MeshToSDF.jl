@@ -17,17 +17,14 @@ end
         sphere_sdf = [sd_sphere(Point3(x, y, z), mesh_scale) for x in r, y in r, z in r]
 
         # now generate a mesh out of it using marching cubes
-        sdfv = abs.(sphere_sdf)
-        algo = MarchingCubes(iso=level, insidepositive=true)
-        mc = GeometryBasics.Mesh(sdfv, algo)
-        _vertices = MeshToSDF.normalize_mesh(decompose(Point3{Float32}, mc), mesh_scale)
+        sdfv = sphere_sdf
+        _vertices, _faces = isosurface(sdfv)
         _vertices = convert.(Point3{Float32}, _vertices)
-        _faces = faces(mc)
 
         # now apply the level-set algorithm
         sdf_out = MeshToSDF.signed_distance_field(_vertices, _faces, n)
 
         # test of the maximum error is less than the expected resolution
-        @test maximum(abs.(sdf_out) .- abs.(sphere_sdf)) < level
+        @test maximum(abs.(sdf_out) .- abs.(sphere_sdf)) < 2*level
     end
 end

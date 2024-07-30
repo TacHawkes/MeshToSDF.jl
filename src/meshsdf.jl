@@ -174,6 +174,7 @@ function make_level_set3(tri, x, origin, dx, ni, nj, nk, exact_band=1)
         sweep(tri, x, phi, closest_tri, origin, dx, +1, -1, -1)
         sweep(tri, x, phi, closest_tri, origin, dx, -1, +1, +1)
     end
+
     # Determine signs (inside/outside) from intersection counts
     for k in 1:nk, j in 1:nj
         total_count = 0
